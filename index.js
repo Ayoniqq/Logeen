@@ -10,6 +10,7 @@ const MongoStore = require('connect-mongo');
 const passport = require('passport');
 const passportLocal = require('passport-local');
 const passportLocalMongoose = require('passport-local-mongoose');
+const User = require('./models/user');
 
 app.set('view engine', 'ejs'); //EJS
 app.set('views', path.join(__dirname, 'views')); //EJS
@@ -67,8 +68,12 @@ app.post('/login', (req,res) => {
 app.get('/register', (req,res) => {
     res.render('register');
 })
-app.post('/register', (req,res) => {
+app.post('/register', async (req,res) => {
     console.log(req.body);
+    const {email, username, password} = req.body;
+    const user = new User({email, username});
+    const regUser = await User.register(user, password);
+
     res.redirect('/');
 })
 /* /REGISTER */
