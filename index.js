@@ -2,10 +2,14 @@ const express = require('express');
 const app = express();
 const PORT = 3000;
 const path = require('path');
-//const bodyParser = require('body-parser'); //5
+
 const dbUrlLocal = 'mongodb://127.0.0.1:27017/logeen';
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+
+const passport = require('passport');
+const passportLocal = require('passport-local');
+const passportLocalMongoose = require('passport-local-mongoose');
 
 app.set('view engine', 'ejs'); //EJS
 app.set('views', path.join(__dirname, 'views')); //EJS
@@ -18,6 +22,13 @@ app.use(session({
     resave: true,
     saveUninitialized: false
 }));
+
+//FOR PASSPORT SESSION
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new passportLocal(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 /* ---------------<--MONGO DB CONNECTION -->-------------------------*/
 
