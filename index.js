@@ -58,9 +58,19 @@ app.get('/', (req, res) => {
 app.get('/login', (req,res) => {
     res.render('login');   
 })
-app.post('/login', (req,res) => {
-    console.log(req.body)
-    res.redirect('/');
+app.post('/login', async (req,res) => {
+    console.log(req.body);
+    const {username, password} = req.body;
+    const userlogd = await User.findByUsername(username);
+    if(userlogd){
+        alert('User found');
+        res.redirect('/');
+    }
+    else{
+        alert('User not found');
+        res.redirect('/login');
+    }
+    //res.redirect('/');
 })
 /* /LOGIN */
 
