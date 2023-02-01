@@ -81,7 +81,7 @@ mongoose.connect(dbUrlLocal)
 
 app.get('/', isLoggedIn, (req, res) => {
     res.render('home');
-});
+}); 
 
 /* REGISTER */
 app.get('/register', (req,res) => {
