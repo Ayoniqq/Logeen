@@ -6,6 +6,7 @@ const path = require('path');
 const dbUrlLocal = 'mongodb://127.0.0.1:27017/logeen';
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
+const bodyParser = require('body-parser');
 
 const passport = require('passport');
 const passportLocal = require('passport-local');
@@ -16,13 +17,43 @@ app.set('view engine', 'ejs'); //EJS
 app.set('views', path.join(__dirname, 'views')); //EJS
 
 app.use(express.urlencoded({ extended: true })); //BODY PARSER FOR FORMS(req.body) 
+//app.use(bodyParser.urlencoded({extended:true}));
 
+const secret = process.env.SECRET || 'mySecret';
+const store = new MongoStore({
+    mongoUrl: dbUrlLocal,
+    secret: secret,
+    touchAfter: 24 * 60 * 60
+})
+
+store.on('error', function (e) {
+    console.log("STORE SESSION ERROR", e)
+})
+
+//STORE SESSION IN MONGO
 app.use(session({
-    secret: 'mySecret',
+    secret,
     store: MongoStore.create({ mongoUrl: dbUrlLocal }),
     resave: true,
-    saveUninitialized: false
+    saveUninitialized: false,
 }));
+
+//FOR SESSION
+const sessionConfig = {
+    store,
+    name: 'session',
+    secret: secret,
+    resave: true,
+    saveUninitialized: true,
+    cookies: {
+        httpOnly: true,
+        //secure: true, //Use this when it is hosted online but diable when on localhost
+        expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+        maxAge: 1000 * 60 * 60 * 24 * 7
+
+    }
+}
+app.use(session(sessionConfig));
 
 //FOR PASSPORT SESSION
 app.use(passport.initialize());
@@ -46,33 +77,11 @@ mongoose.connect(dbUrlLocal)
         console.log(err);
     })
 
-/* ---------------<--MONGO DB CONNECTION -->-------------------------*/
+/* ---------------<--END OF MONGO DB CONNECTION -->-------------------------*/
 
-
-
-app.get('/', (req, res) => {
+app.get('/', isLoggedIn, (req, res) => {
     res.render('home');
 });
-
-/* LOGIN */
-app.get('/login', (req,res) => {
-    res.render('login');   
-})
-app.post('/login', async (req,res) => {
-    console.log(req.body);
-    const {username, password} = req.body;
-    const userlogd = await User.findByUsername(username);
-    if(userlogd){
-        alert('User found');
-        res.redirect('/');
-    }
-    else{
-        alert('User not found');
-        res.redirect('/login');
-    }
-    //res.redirect('/');
-})
-/* /LOGIN */
 
 /* REGISTER */
 app.get('/register', (req,res) => {
@@ -83,11 +92,38 @@ app.post('/register', async (req,res) => {
     const {email, username, password} = req.body;
     const user = new User({email, username});
     const regUser = await User.register(user, password);
-
     res.redirect('/');
 })
 /* /REGISTER */
 
+/* LOGIN */
+app.get('/login', (req,res) => {
+    res.render('login');   
+})
+app.post('/login', passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/login',
+}), (req,res) => {
+    console.log(req.body);
+})
+/* /LOGIN */
+
+/* LOGOUT */
+app.get('/logout', (req,res) => {
+    req.logout(err => {
+        if (err) {
+            return next(err)
+        }
+    });
+    res.redirect('/');
+})
+
+//MIDDLEWARE TO CONFIRM USER IS LOGGED IN 
+function isLoggedIn(req,res,next){
+    if(req.isAuthenticated()) return next();
+    res.redirect('/login');
+}
+
 app.listen(PORT, ()=> {
     console.log(`Listening on PORT: ${PORT}`);
-})
+});

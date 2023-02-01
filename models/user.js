@@ -10,7 +10,7 @@ const userSchema = new Schema({
         unique: true
     }
 })
-userSchema.plugin(passportLocalMongoose);
+userSchema.plugin(passportLocalMongoose); //FOR USERNAME & PASSWORD
 
 //MODEL
 const User = mongoose.model('User', userSchema);
